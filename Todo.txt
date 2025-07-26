@@ -1,0 +1,22 @@
+WHAT I WANT TO BUILD
+
+description: a content management system for blog websites to  
+    create, view, edit and delete their posts efficiently
+
+    it should also allow for uploading of media: 
+    this media shall be stored in cloudinary
+
+
+routes:
+    GET /posts          retrieve all posts
+    GET /posts/:id      retrieve a single post  
+    POST /posts         create a post
+    PUT /posts/:id      edit a single post
+    DELETE /posts/:id   delete a single post
+    DELETE /posts/[:id]   delete multiple posts
+
+
+authentication:
+    * through auth headers
+    * browser cookies
+    * in the request query
