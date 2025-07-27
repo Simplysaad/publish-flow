@@ -50,27 +50,6 @@ router.use(async (req, res, next) => {
     }
 });
 
-/**
- * GET
- * main -index page
- */
-
-//router.get("/", mainController.getHome);
-router.get("/", async(req, res, next)=>{
-    try {
-        // Fetch all posts from the database
-        let allPosts = await Post.find({})
-
-        return res.json({
-            success: true, 
-            message: "all posts retrieved successfully",
-            allPosts
-        })
-    } catch (err) {
-        next(err)
-    }
-});
-
 
 router.get("/automate", mainController.automate);
 
@@ -87,9 +66,7 @@ router.get(["/author/", "/author/:slug"], mainController.getAuthor);
  * @params {String} id
  */
 
-router.get(["/article/", "/article/:slug"], mainController.getArticle);
 
-router.post("/category", mainController.postCategory);
 /**
  * GET
  * MAIN - get all posts in the same category
@@ -107,19 +84,15 @@ router.all("/search", mainController.allSearch);
 router.get("/autocomplete", mainController.getAutocomplete);
 
 /**
- * POST
- * MAIN - adds a new subscriber
- */
-
-router.post("/subscribe", mainController.postSubscribe);
-
-/**
  * 404
  * THIS PAGE COULD NOT BE FOUND
  */
 
 router.get("/*path", (req, res, next) => {
-    return //res.render("Pages/Error/404", {});
+    return res.status(404).json({
+        success: false,
+        message: "page not found"
+    })
 });
 
 module.exports = router;

@@ -11,29 +11,19 @@ const authMiddleware = require("../Utils/auth.middleware.js");
 const adminController = require("../Controllers/admin.controller.js")
 
 
-router.get("/", adminController.getAllPosts);
+router.get("/posts", adminController.getAllPosts); //COMPLETED
 
-router.post("/posts", adminController.postCreatePost);
+router.post("/posts", adminController.postCreatePost); // COMPLETED
 
-router.get("/posts/:id", adminController.getSinglePost);
-router.post("/posts/:id", adminController.editPost);
+router.get("/posts/:id", adminController.getSinglePost); // COMPLETED
 
-router.delete("/posts/:id", adminController.deletePost);
+router.put("/posts/:id", adminController.editPost); // COMPLETED
 
+router.delete("/posts/:id", adminController.deletePost); // COMPLETED
 
-const allPosts = require("../posts.js")
-router.post("/posts/insert-many", async(req, res, next)=>{
-    try {
-        let insertedPosts = await Post.insertMany(allPosts);
-        return res.status(201).json({
-            success: true,
-            message: "Posts inserted successfully",
-            data: insertedPosts
-        });
-    } catch (err) {
-        next(err)
-    }
-})
+router.all("/search", adminController.allSearch); // COMPLETED
+
+router.get("/autocomplete", adminController.getAutocomplete);
 
 
 module.exports = router;

@@ -2,11 +2,15 @@ const mongoose = require("mongoose");
 const Category = require("../Models/category.model");
 const Post = require("../Models/post.model.js");
 const User = require("../Models/user.model.js");
+const Search = require("../Models/search.model.js");
 
 exports.getAllPosts = async (req, res, next) => {
   try {
-    let { userId } = req.session;
+    let { userId = null } = req.session;
     let currentUser = await User.findById(userId);
+
+    let currentUserPosts = [];
+    currentUserPosts = await Post.find({});
 
     if (!currentUser) {
       return res.status(403).json({
@@ -14,20 +18,14 @@ exports.getAllPosts = async (req, res, next) => {
         message: "user not logged in",
       });
     }
-    let currentUserPosts = [];
 
-    if (currentUser.roles.includes("admin")) {
-      currentUserPosts = await Post.find({});
-    } else {
-      currentUserPosts = await Post.find({ authorId: currentUser._id });
-    }
+    // currentUserPosts = await Post.find({ authorId: currentUser._id });
 
-    locals.title = "Admin Dashboard | BiographyHub";
-
-    res.render("Pages/Admin/dashboard", {
-      locals,
+    return res.status(200).json({
+      success: true,
+      message: "posts fetched successfully",
       currentUserPosts,
-      layout: "Layouts/admin",
+      currentUser,
     });
   } catch (err) {
     next(err);
@@ -39,12 +37,12 @@ exports.postCreatePost = async (req, res, next) => {
     let { userId } = req.session;
     const currentUser = await User.findOne({ _id: userId });
 
-    if (!currentUser) {
-      return res.status(403).json({
-        success: false,
-        message: "user not logged in",
-      });
-    }
+    // if (!currentUser) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "user not logged in",
+    //   });
+    // }
 
     if (!req.body) {
       return res.status(400).json({
@@ -93,9 +91,8 @@ exports.postCreatePost = async (req, res, next) => {
 
     let newPost = new Post({
       ...req.body,
-      category: parent._id,
+      category: mainCategory._id || parent._id,
       authorId: currentUser?._id,
-      category: mainCategory._id,
     });
 
     await newPost.save();
@@ -104,6 +101,7 @@ exports.postCreatePost = async (req, res, next) => {
       success: true,
       message: "post created successfully",
       data: newPost,
+      currentUser,
     });
   } catch (err) {
     next(err);
@@ -167,6 +165,11 @@ exports.getSinglePost = async (req, res, next) => {
       .populate("authorId")
       .populate("category");
 
+    const generateSlug = (post) => {
+      return `${post.title.toLowerCase().trim().replace(/\W+/g, "-")}-${
+        post._id
+      }`;
+    };
     const isValidObjectId = mongoose.Types.ObjectId.isValid(articleId);
     if (!isValidObjectId || !article) {
       let [article] = await Post.aggregate([{ sample: { size: 1 } }]);
@@ -192,11 +195,6 @@ exports.getSinglePost = async (req, res, next) => {
     ]);
 
     relatedPosts.map((post) => (post.slug = generateSlug(post)));
-    const generateSlug = (post) => {
-      return `${post.title.toLowerCase().trim().replace(/\W+/g, "-")}-${
-        post._id
-      }`;
-    };
 
     return res.json({
       success: true,
@@ -232,17 +230,25 @@ exports.deletePosts = async (req, res, next) => {
 
 exports.editPost = async (req, res, next) => {
   try {
-    let { title, content, tags, imageUrl } = req.body;
+    let { title, content, description, tags, imageUrl } = req.body;
 
-    req.body.tags ? req.body.tags.split(",") : null;
+    if (tags) {
+      if (!Array.isArray(tags)) {
+        tags = tags.split(",");
+      }
+    }
 
     let updatedPost = await Post.findByIdAndUpdate(
       req.params.id,
       {
         $set: {
-          ...req.body,
+          title,
+          content,
+          description,
+          imageUrl,
           updatedAt: Date.now(),
         },
+        $addToSet: { tags },
       },
       { new: true }
     );
@@ -257,27 +263,119 @@ exports.editPost = async (req, res, next) => {
       message: "post updated successfully",
       updatedPost,
     });
-
-    return res.redirect("/admin/");
   } catch (error) {
     next(error);
   }
 };
 
+exports.deletePost = async (req, res, next) => {
+  let deletedPost = await Post.findByIdAndDelete(req.params.id);
 
-exports.deletePost = async (req, res, next)=>{
-
-    let deletedPost = await Post.findByIdAndDelete(req.params.id);
-    
-    if (!deletedPost) {
-        return res.status(201).json({
-            success: false,
-            message: "post could not be deleted",
-        });
-    }
-    return res.status(201).json({
-        success: true,
-        message: "post deleted successfully",
-        deletedPost,
+  if (!deletedPost) {
+    return res.status(404).json({
+      success: false,
+      message: "post not found and could not be deleted",
     });
-}
+  }
+  return res.status(201).json({
+    success: true,
+    message: "post deleted successfully",
+    deletedPost,
+  });
+};
+
+exports.allSearch = async (req, res, next) => {
+  try {
+    const { userId = null } = req.session;
+    let {
+      searchTerm,
+      perPage = 20,
+      page = 1,
+      category,
+      from,
+      to = Date.now(),
+    } = req.query;
+
+    let filters = {};
+
+    if (category) {
+      let inCategory = await Category.findOne({
+        name: category.trim().toLowerCase(),
+      }).select("_id name");
+
+      filters.category = inCategory?._id;
+    }
+
+    if (from || to) {
+      filters.updatedAt = {};
+      if (from) filters.updatedAt.$gte = new Date(from);
+      if (to) filters.updatedAt.$lte = new Date(to);
+    }
+    console.log(filters);
+    searchTerm = searchTerm.trim().toLowerCase();
+
+    let searchResultsCount = await Post.countDocuments({
+      $text: { $search: searchTerm },
+      ...filters,
+    });
+
+    let searchResults = await Post.find(
+      { $text: { $search: searchTerm }, ...filters },
+      { score: { $meta: "textScore" } }
+    )
+      .sort({ score: { $meta: "textScore" } })
+      .skip((page - 1) * perPage)
+      .limit(perPage);
+
+    let newSearch;
+    if (searchResults.length > 0) {
+      newSearch = await Search.findOneAndUpdate(
+        { searchTerm },
+        {
+          $setOnInsert: {
+            searchTerm,
+            searchResults,
+            userId,
+            filters,
+          },
+          $inc: {
+            searchCount: 1,
+          },
+        },
+        { upsert: true, new: true }
+      );
+    }
+
+    // return res.json({
+    return res.status(201).json({
+      success: true,
+      message: `Your search for ${searchTerm}, brought ${
+        searchResultsCount + " results" ?? "no result"
+      }`,
+      searchResults,
+      searchResultsCount,
+      newSearch,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getAutocomplete = async (req, res, next) => {
+  try {
+    let { text, perPage = 6 } = req.query;
+    const newRegex = new RegExp(text, "ig");
+
+    let suggestions = await Search.find({
+      searchTerm: { $regex: newRegex },
+    }).limit(perPage);
+
+    return res.status(200).json({
+      success: true,
+      message: "autocomplete successful",
+      suggestions,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
