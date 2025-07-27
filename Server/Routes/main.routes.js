@@ -1,7 +1,8 @@
 const express = require("express");
 //const dummyData = require("./dummyData");
 const router = express.Router();
-const cron = require("node-cron");
+
+const Post = require("../Models/post.model.js");
 
 const mainController = require("../Controllers/main.controller.js");
 const Category = require("../Models/category.model.js");
@@ -54,9 +55,10 @@ router.use(async (req, res, next) => {
  * main -index page
  */
 
-router.get("/", mainController.getHome);
-router.get("/all-posts", async(req, res, next)=>{
+//router.get("/", mainController.getHome);
+router.get("/", async(req, res, next)=>{
     try {
+        // Fetch all posts from the database
         let allPosts = await Post.find({})
 
         return res.json({
@@ -117,7 +119,7 @@ router.post("/subscribe", mainController.postSubscribe);
  */
 
 router.get("/*path", (req, res, next) => {
-    return res.render("Pages/Error/404", {});
+    return //res.render("Pages/Error/404", {});
 });
 
 module.exports = router;

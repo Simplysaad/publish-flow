@@ -5,11 +5,6 @@ const User = require("../Models/user.model.js");
 const Category = require("../Models/category.model.js");
 const Search = require("../Models/search.model.js");
 
-const helper = require("../Utils/helper");
-const automate = require("../Utils/automate.js");
-const searchPictures = require("../Utils/searchPicture.js");
-const { generateSlug } = require("../Utils/generateSlug.js");
-
 exports.getHome = async (req, res, next) => {
     try {
         //ENSURE THAT THE POSTS RETURNED ARE PUBLISHED {status: "published"}
