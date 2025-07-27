@@ -23,7 +23,7 @@ router.delete("/posts/:id", adminController.deletePost); // COMPLETED
 
 router.all("/search", adminController.allSearch); // COMPLETED
 
-router.get("/autocomplete", adminController.getAutocomplete);
+router.get("/autocomplete", adminController.getAutocomplete); // COMPLETED
 
 
 module.exports = router;
