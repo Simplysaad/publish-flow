@@ -3,7 +3,6 @@
 A powerful, developer-friendly platform designed to make managing and publishing blog content effortless across websites. with a simple RESTful interface, flexible content modelling and seamless integration, you get total control over your blog, from writing to publishing; anywhere, anytime. Scalable, secure and built for speed
 
 
-
 # Admin API Documentation
 
 This document describes the API endpoints available in the `admin.routes.js` file for the Publish Flow application. All endpoints are prefixed with `/admin` (assuming this router is mounted at `/admin`).
